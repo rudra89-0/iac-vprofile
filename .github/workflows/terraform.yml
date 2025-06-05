@@ -1,10 +1,10 @@
 name: "Vprofile IAC"
 on:
   push:
-    branches: 
+    branches:
       - main
       - stage
-    paths: 
+    paths:
       - terraform/**
   pull_request:
     branches:
