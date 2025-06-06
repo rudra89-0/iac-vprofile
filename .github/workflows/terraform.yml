@@ -63,15 +63,28 @@ jobs:
         run: terraform apply -auto-approve -input=false -parallelism=1 planfile
 
       - name: Configure AWS credentials
+        if: steps.apply.outcome == 'success'
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Wait for EKS cluster
+        if: steps.apply.outcome == 'success'
+        run: |
+          echo "Waiting for EKS cluster to be ready..."
+          aws eks wait cluster-active \
+          --region ${{ env.AWS_REGION }} \
+          --name ${{ env.EKS_CLUSTER }}
+
       - name: Get Kube config file
         id: getconfig
-        run: aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER }}
+        if: steps.apply.outcome == 'success'
+        run: |
+          aws eks update-kubeconfig \
+          --region ${{ env.AWS_REGION }} \
+          --name ${{ env.EKS_CLUSTER }}
 
       - name: Install Ingress controller
         if: steps.getconfig.outcome == 'success'
